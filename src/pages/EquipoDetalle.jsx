@@ -13,6 +13,7 @@ const EquipoDetalle = ({ usuario }) => {
     const [nuevoJugador, setNuevoJugador] = useState({ 
         nombre: '', apellido: '', dni: '', fechaNacimiento: '' 
     });
+    const [cargando, setCargando] = useState(true);
     const plantillaRef = useRef();
 
     // Headers para las peticiones protegidas del Backend
@@ -28,8 +29,9 @@ const EquipoDetalle = ({ usuario }) => {
     }, [id]);
 
     const obtenerDatos = async () => {
+        setCargando(true);
         try {
-            // Obtenemos todos los equipos para encontrar el actual y ver su dueño
+            // Obtenemos los equipos para encontrar el actual y ver su dueño
             const resEq = await api.get('/equipos');
             const equipoEncontrado = resEq.data.find(e => e.id == id);
             setEquipo(equipoEncontrado);
@@ -39,10 +41,11 @@ const EquipoDetalle = ({ usuario }) => {
             setJugadores(resJug.data);
         } catch (error) {
             console.error("Error cargando datos:", error);
+        } finally {
+            setCargando(false);
         }
     };
 
-    // Lógica de permisos para la UI
     const puedeGestionar = () => {
         if (!equipo || !usuario) return false;
         return usuario.rol === 'ADMIN' || (equipo.usuarioDueno && equipo.usuarioDueno.id === usuario.id);
@@ -85,107 +88,149 @@ const EquipoDetalle = ({ usuario }) => {
         } catch (error) { console.error(error); }
     };
 
-    if (!equipo) return <div className="p-20 text-center font-black animate-pulse">CARGANDO...</div>;
+    if (cargando || !equipo) return (
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+            <div className="text-emerald-500 font-black animate-pulse tracking-widest text-2xl uppercase italic">Analizando Táctica...</div>
+        </div>
+    );
 
     const gestionActiva = puedeGestionar();
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-20">
-            {/* Cabecera Dinámica */}
-            <div className="h-44 flex items-end p-8 transition-colors duration-700 shadow-inner" 
+        <div className="min-h-screen bg-slate-50 pb-20 italic">
+            {/* Header Moderno con Color Dinámico */}
+            <div className="h-64 relative overflow-hidden flex items-end shadow-2xl transition-all duration-700" 
                  style={{ backgroundColor: equipo.colorPrincipal || '#1e293b' }}>
-                <div className="max-w-6xl mx-auto w-full flex justify-between items-center text-white">
+                
+                {/* Texto decorativo de fondo */}
+                <div className="absolute inset-0 bg-black/10 text-[180px] font-black opacity-10 select-none -bottom-16 -left-10 leading-none uppercase truncate">
+                    {equipo.nombre}
+                </div>
+
+                <div className="max-w-7xl mx-auto w-full p-10 flex flex-col md:flex-row justify-between items-end relative z-10 text-white gap-6">
                     <div>
-                        <Link to="/home" className="text-[10px] font-black bg-black/20 px-3 py-1 rounded-full hover:bg-black/40 transition-all uppercase tracking-widest">← Volver</Link>
-                        <h1 className="text-5xl font-black uppercase mt-2 tracking-tighter">{equipo.nombre}</h1>
-                        <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest mt-1">
-                            {gestionActiva ? "🟢 Modo Editor Habilitado" : "⚪ Modo Solo Lectura"}
-                        </p>
+                        <Link to="/home" className="text-[10px] font-black bg-white/20 backdrop-blur-md px-5 py-2 rounded-full hover:bg-white hover:text-slate-900 transition-all uppercase tracking-[0.2em]">
+                            ← Volver al Panel
+                        </Link>
+                        <h1 className="text-6xl font-black uppercase mt-4 tracking-tighter leading-none">{equipo.nombre}</h1>
+                        <div className="flex items-center gap-3 mt-4">
+                            <span className={`w-3 h-3 rounded-full ${gestionActiva ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`}></span>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">
+                                {gestionActiva ? "Estratega: Modo Edición Habilitado" : "Modo Observador"}
+                            </p>
+                        </div>
                     </div>
                     <button 
-                        onClick={descargarPDF}
-                        className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-black shadow-xl hover:scale-105 active:scale-95 transition-all text-xs"
+                        onClick={descargarPDF} 
+                        className="bg-slate-900 text-white px-10 py-5 rounded-[1.5rem] font-black shadow-2xl hover:bg-emerald-600 hover:scale-105 active:scale-95 transition-all text-[11px] tracking-widest uppercase"
                     >
-                        DESCARGAR PDF
+                        Generar Informe PDF
                     </button>
                 </div>
             </div>
 
-            <main className="max-w-6xl mx-auto mt-12 px-6 grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <main className="max-w-7xl mx-auto mt-[-40px] px-6 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-20">
                 
-                {/* Formulario: Solo aparece si eres Dueño o Admin */}
+                {/* Panel de Registro (Solo si tiene permisos) */}
                 {gestionActiva && (
-                    <section className="lg:col-span-4 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200 h-fit sticky top-8">
+                    <section className="lg:col-span-4 bg-white p-10 rounded-[3rem] shadow-xl border border-white h-fit sticky top-28">
                         <div className="flex justify-between items-center mb-8">
-                            <h3 className="text-xl font-black uppercase tracking-tighter">
-                                {editandoId ? 'Editar Jugador' : 'Nuevo Ingreso'}
+                            <h3 className="text-2xl font-black uppercase tracking-tighter italic">
+                                {editandoId ? 'Editar Ficha' : 'Fichar Jugador'}
                             </h3>
-                            <span className="text-[10px] font-black px-3 py-1 bg-slate-100 rounded-full text-slate-400">
-                                {jugadores.length}/22
-                            </span>
+                            <div className="bg-slate-950 text-emerald-400 text-[10px] font-black px-4 py-2 rounded-xl italic">
+                                {jugadores.length} / 22
+                            </div>
                         </div>
                         
                         <form onSubmit={handleGuardar} className="space-y-4">
                             <div className="space-y-3">
-                                <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-slate-200 outline-none" placeholder="Nombre" value={nuevoJugador.nombre} onChange={e => setNuevoJugador({...nuevoJugador, nombre: e.target.value})} required />
-                                <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-slate-200 outline-none" placeholder="Apellido" value={nuevoJugador.apellido} onChange={e => setNuevoJugador({...nuevoJugador, apellido: e.target.value})} required />
-                                <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-slate-200 outline-none font-mono" placeholder="DNI" value={nuevoJugador.dni} onChange={e => setNuevoJugador({...nuevoJugador, dni: e.target.value})} required />
-                                <div>
-                                    <label className="text-[9px] font-black text-slate-400 ml-2 uppercase tracking-widest">Fecha Nacimiento</label>
-                                    <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-slate-200 outline-none" type="date" value={nuevoJugador.fechaNacimiento} onChange={e => setNuevoJugador({...nuevoJugador, fechaNacimiento: e.target.value})} required />
+                                <div className="group">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block group-focus-within:text-emerald-600">Nombre</label>
+                                    <input className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl text-sm font-bold focus:border-emerald-500 focus:bg-white outline-none transition-all" value={nuevoJugador.nombre} onChange={e => setNuevoJugador({...nuevoJugador, nombre: e.target.value})} required />
+                                </div>
+                                <div className="group">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block group-focus-within:text-emerald-600">Apellido</label>
+                                    <input className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl text-sm font-bold focus:border-emerald-500 focus:bg-white outline-none transition-all" value={nuevoJugador.apellido} onChange={e => setNuevoJugador({...nuevoJugador, apellido: e.target.value})} required />
+                                </div>
+                                <div className="group">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block group-focus-within:text-emerald-600">DNI / ID</label>
+                                    <input className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl text-sm font-mono font-bold focus:border-emerald-500 focus:bg-white outline-none transition-all" value={nuevoJugador.dni} onChange={e => setNuevoJugador({...nuevoJugador, dni: e.target.value})} required />
+                                </div>
+                                <div className="group">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block group-focus-within:text-emerald-600">Fecha Nacimiento</label>
+                                    <input className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl text-sm font-bold outline-none focus:border-emerald-500 focus:bg-white transition-all" type="date" value={nuevoJugador.fechaNacimiento} onChange={e => setNuevoJugador({...nuevoJugador, fechaNacimiento: e.target.value})} required />
                                 </div>
                             </div>
 
-                            <button className={`w-full py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg transition-all active:scale-95 ${editandoId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-slate-900 hover:bg-slate-800'} text-white`}>
-                                {editandoId ? 'Actualizar Datos' : 'Registrar Jugador'}
+                            <button className={`w-full mt-4 py-5 rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-lg transition-all active:scale-95 ${editandoId ? 'bg-amber-500 text-white' : 'bg-slate-900 text-white hover:bg-emerald-600'}`}>
+                                {editandoId ? 'Actualizar Contrato' : 'Confirmar Ingreso'}
                             </button>
                             
                             {editandoId && (
-                                <button type="button" onClick={() => {setEditandoId(null); setNuevoJugador({nombre:'', apellido:'', dni:'', fechaNacimiento:''})}} className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest mt-4">Cancelar Edición</button>
+                                <button type="button" onClick={() => {setEditandoId(null); setNuevoJugador({nombre:'', apellido:'', dni:'', fechaNacimiento:''})}} className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest mt-4">Descartar Edición</button>
                             )}
                         </form>
                     </section>
                 )}
 
-                {/* Tabla: Se expande si no hay formulario */}
-                <section className={`${gestionActiva ? 'lg:col-span-8' : 'lg:col-span-12'} bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden transition-all duration-500`}>
-                    <table className="w-full text-left">
-                        <thead className="bg-slate-50 border-b border-slate-100">
-                            <tr className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
-                                <th className="p-7">Jugador</th>
-                                <th className="p-7">Identificación</th>
-                                <th className="p-7">F. Nacimiento</th>
-                                {gestionActiva && <th className="p-7 text-right">Acciones</th>}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {jugadores.map(j => (
-                                <tr key={j.id} className="group hover:bg-slate-50/50 transition-colors">
-                                    <td className="p-7">
-                                        <div className="font-bold text-slate-800 text-lg tracking-tight leading-none">{j.apellido.toUpperCase()}, <span className="text-slate-500 font-medium">{j.nombre}</span></div>
-                                    </td>
-                                    <td className="p-7">
-                                        <span className="bg-slate-100 px-3 py-1 rounded-lg text-xs font-mono font-bold text-slate-600">{j.dni}</span>
-                                    </td>
-                                    <td className="p-7 text-sm font-bold text-slate-400">
-                                        {new Date(j.fechaNacimiento).toLocaleDateString('es-AR')}
-                                    </td>
-                                    
-                                    {gestionActiva && (
-                                        <td className="p-7 text-right">
-                                            <div className="flex justify-end gap-3">
-                                                <button onClick={() => {setEditandoId(j.id); setNuevoJugador(j)}} className="p-2 text-amber-500 hover:bg-amber-50 rounded-xl transition-all">✎</button>
-                                                <button onClick={() => handleBorrar(j.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-all">🗑</button>
+                {/* Tabla de Jugadores */}
+                <section className={`${gestionActiva ? 'lg:col-span-8' : 'lg:col-span-12'} bg-white rounded-[3rem] shadow-xl border border-white overflow-hidden`}>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="bg-slate-950 text-white text-[10px] font-black uppercase tracking-[0.2em]">
+                                    <th className="p-8 text-left">N° / Jugador</th>
+                                    <th className="p-8 text-left">DNI</th>
+                                    <th className="p-8 text-left">Edad</th>
+                                    {gestionActiva && <th className="p-8 text-right">Acciones</th>}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {jugadores.map((j, index) => (
+                                    <tr key={j.id} className="group hover:bg-emerald-50/50 transition-all duration-300">
+                                        <td className="p-8">
+                                            <div className="flex items-center gap-5">
+                                                <span className="text-slate-200 font-black text-3xl italic group-hover:text-emerald-200 transition-colors">
+                                                    {(index + 1).toString().padStart(2, '0')}
+                                                </span>
+                                                <div>
+                                                    <div className="font-black text-slate-800 text-xl tracking-tighter uppercase leading-none italic">{j.apellido}</div>
+                                                    <div className="text-emerald-600 font-bold text-[10px] uppercase tracking-widest">{j.nombre}</div>
+                                                </div>
                                             </div>
                                         </td>
-                                    )}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                        <td className="p-8">
+                                            <span className="text-[10px] font-mono font-black bg-slate-100 px-3 py-1.5 rounded-xl text-slate-500 group-hover:bg-white transition-colors border border-transparent group-hover:border-slate-200">
+                                                {j.dni}
+                                            </span>
+                                        </td>
+                                        <td className="p-8">
+                                            <div className="text-sm font-black text-slate-400 group-hover:text-slate-600 transition-colors">
+                                                {new Date().getFullYear() - new Date(j.fechaNacimiento).getFullYear()} <span className="text-[10px] ml-1">AÑOS</span>
+                                            </div>
+                                        </td>
+                                        {gestionActiva && (
+                                            <td className="p-8 text-right">
+                                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                                                    <button onClick={() => {setEditandoId(j.id); setNuevoJugador(j)}} className="w-11 h-11 flex items-center justify-center bg-amber-100 text-amber-600 rounded-2xl hover:bg-amber-500 hover:text-white transition-all shadow-sm">
+                                                        ✎
+                                                    </button>
+                                                    <button onClick={() => handleBorrar(j.id)} className="w-11 h-11 flex items-center justify-center bg-red-100 text-red-600 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                                                        🗑
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                     {jugadores.length === 0 && (
-                        <div className="p-24 text-center">
-                            <p className="text-slate-300 font-black uppercase tracking-[0.3em] text-xs italic">La plantilla está vacía</p>
+                        <div className="p-32 text-center">
+                            <div className="text-slate-200 text-6xl mb-4 italic font-black">VACÍO</div>
+                            <p className="text-slate-400 font-bold uppercase tracking-[0.4em] text-xs">Sin jugadores registrados en la plantilla</p>
                         </div>
                     )}
                 </section>

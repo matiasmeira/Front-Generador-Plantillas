@@ -6,11 +6,7 @@ const ListaEquipos = () => {
     const [equipos, setEquipos] = useState([]);
     const [cargando, setCargando] = useState(true);
 
-    // --- SIMULACIÓN DE SESIÓN (En un futuro esto vendrá de un AuthContext) ---
-    const [usuarioSesion] = useState({
-        id: 1,       // Cambia este ID para probar si puedes editar tus equipos
-        rol: 'USER'  // Prueba con 'ADMIN' para ver que puedes editar TODOS
-    });
+    const [usuarioSesion] = useState({ id: 1, rol: 'USER' });
 
     useEffect(() => {
         const cargarEquipos = async () => {
@@ -26,71 +22,58 @@ const ListaEquipos = () => {
         cargarEquipos();
     }, []);
 
-    // Función que replica la lógica del Backend
     const tienePermiso = (equipo) => {
         if (usuarioSesion.rol === 'ADMIN') return true;
         return equipo.usuarioDueno && equipo.usuarioDueno.id === usuarioSesion.id;
     };
 
-    if (cargando) return <div className="text-center p-20 font-bold">Cargando equipos...</div>;
+    if (cargando) return (
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+            <div className="text-emerald-500 font-black animate-pulse tracking-widest text-2xl uppercase italic">Cargando Tácticas...</div>
+        </div>
+    );
 
     return (
-        <div className="min-h-screen bg-slate-50 p-8">
-            <div className="max-w-6xl mx-auto">
-                <header className="flex justify-between items-end mb-12">
+        <div className="min-h-screen bg-slate-950 pb-20 relative overflow-hidden" 
+             style={{ backgroundImage: `radial-gradient(circle at 50% 0%, #064e3b 0%, #020617 70%)` }}>
+            
+            <div className="max-w-6xl mx-auto px-6 relative z-10">
+                <header className="flex flex-col md:flex-row justify-between items-center py-12 gap-6">
                     <div>
-                        <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Comunidad de Equipos</h1>
-                        <p className="text-slate-500 font-medium">Explora las plantillas creadas por otros usuarios</p>
+                        <h1 className="text-5xl font-black text-white tracking-tighter uppercase italic">Comunidad</h1>
+                        <p className="text-emerald-400/60 font-bold uppercase text-xs tracking-[0.2em] mt-2">Explora las pizarras de la liga</p>
                     </div>
-                    <div className="bg-white px-4 py-2 rounded-2xl border border-slate-200 text-xs font-bold shadow-sm">
-                        Sesión: <span className="text-blue-600">{usuarioSesion.rol}</span> (ID: {usuarioSesion.id})
+                    <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 text-[10px] font-black shadow-xl text-white tracking-widest uppercase">
+                        Estado: <span className="text-emerald-400 ml-1">{usuarioSesion.rol}</span>
                     </div>
                 </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 italic">
                     {equipos.map(equipo => (
-                        <div key={equipo.id} className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-all group">
-                            {/* Color del equipo */}
-                            <div 
-                                className="w-12 h-12 rounded-2xl mb-6 shadow-inner" 
-                                style={{ backgroundColor: equipo.colorPrincipal || '#000' }}
-                            />
+                        <div key={equipo.id} className="bg-white rounded-[2.5rem] p-8 shadow-2xl transition-all hover:-translate-y-2 group relative overflow-hidden">
+                            {/* Indicador lateral de color */}
+                            <div className="absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-10 transition-transform group-hover:scale-150" 
+                                 style={{ backgroundColor: equipo.colorPrincipal || '#10b981' }} />
                             
-                            <h2 className="text-2xl font-black text-slate-800 mb-2 uppercase">{equipo.nombre}</h2>
+                            <div className="w-14 h-14 rounded-2xl mb-6 shadow-lg border-4 border-white transform -rotate-3 group-hover:rotate-0 transition-transform" 
+                                 style={{ backgroundColor: equipo.colorPrincipal || '#000' }} />
                             
-                            <div className="space-y-1 mb-8">
-                                <p className="text-sm text-slate-400 font-bold uppercase tracking-wider">Creado por:</p>
-                                <p className="text-slate-700 font-semibold italic">
-                                    {equipo.usuarioDueno ? equipo.usuarioDueno.nombre : 'Anónimo'}
-                                </p>
-                            </div>
+                            <h2 className="text-3xl font-black text-slate-800 mb-2 leading-none">{equipo.nombre}</h2>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8 italic">DT: {equipo.usuarioDueno?.nombre || 'Anónimo'}</p>
 
                             <div className="flex gap-3">
-                                <Link 
-                                    to={`/equipo/${equipo.id}`}
-                                    className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black text-center text-xs hover:bg-slate-200 transition-colors"
-                                >
-                                    VER JUGADORES
+                                <Link to={`/equipo/${equipo.id}`} className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-center text-[10px] hover:bg-emerald-600 transition-colors uppercase tracking-widest shadow-lg">
+                                    Ver Pizarra
                                 </Link>
-
                                 {tienePermiso(equipo) && (
-                                    <Link 
-                                        to={`/equipo/editar/${equipo.id}`}
-                                        className="bg-amber-100 text-amber-600 px-6 py-4 rounded-2xl font-black text-xs hover:bg-amber-200 transition-colors"
-                                    >
-                                        EDITAR
+                                    <Link to={`/equipo/editar/${equipo.id}`} className="bg-emerald-100 text-emerald-700 px-6 py-4 rounded-2xl font-black text-[10px] hover:bg-emerald-200 transition-colors uppercase tracking-widest">
+                                        ✎
                                     </Link>
                                 )}
                             </div>
                         </div>
                     ))}
                 </div>
-
-                {equipos.length === 0 && (
-                    <div className="text-center py-20 bg-slate-100 rounded-[3rem] border-2 border-dashed border-slate-200">
-                        <p className="text-slate-400 font-bold uppercase">No hay equipos registrados aún</p>
-                    </div>
-                )}
             </div>
         </div>
     );
