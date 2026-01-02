@@ -77,15 +77,28 @@ const EquipoDetalle = ({ usuario }) => {
     const descargarPDF = async () => {
         const elemento = plantillaRef.current;
         if (!elemento) return;
+
         try {
-            const canvas = await html2canvas(elemento, { scale: 2, useCORS: true });
+            const canvas = await html2canvas(elemento, {
+                scale: 2, // Calidad de impresión
+                useCORS: true,
+                logging: false,
+                backgroundColor: "#ffffff",
+                // Forzamos el tamaño de captura al tamaño del elemento A4
+                width: 794, // 210mm a 96dpi
+                height: 1123, // 297mm a 96dpi
+                scrollY: -window.scrollY // Evita cortes si el usuario hizo scroll
+            });
+
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`Plantilla-${equipo.nombre}.pdf`);
-        } catch (error) { console.error(error); }
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+            pdf.save(`Planilla_Oficial_${equipo.nombre}.pdf`);
+            
+        } catch (error) {
+            console.error("Error al generar PDF:", error);
+        }
     };
 
     if (cargando || !equipo) return (
@@ -237,8 +250,14 @@ const EquipoDetalle = ({ usuario }) => {
             </main>
 
             {/* AREA OCULTA PARA PDF */}
-            <div style={{ position: 'absolute', left: '-9999px', top: '0' }}>
-                <PlantillaPreview equipo={equipo} jugadores={jugadores} reference={plantillaRef} />
+            <div style={{ position: 'absolute', left: '-10000px', top: 0 }}>
+                <div id="print-area">
+                    <PlantillaPreview 
+                        equipo={equipo} 
+                        jugadores={jugadores} 
+                        reference={plantillaRef} 
+                    />
+                </div>
             </div>
         </div>
     );
