@@ -8,16 +8,19 @@ const Home = ({ usuario, setUsuario }) => {
     const [nuevoEquipo, setNuevoEquipo] = useState({ nombre: '', colorPrincipal: '#10b981' });
     const navigate = useNavigate();
 
-    useEffect(() => { obtenerEquipos(); }, []);
+    useEffect(() => { 
+        obtenerEquipos(); 
+    }, []);
 
     const obtenerEquipos = () => {
         api.get('/equipos')
             .then(res => setEquipos(res.data))
-            .catch(err => console.error(err));
+            .catch(err => console.error("Error al obtener equipos:", err));
     };
 
     const handleCrearEquipo = (e) => {
         e.preventDefault();
+        // Usamos el ID del usuario de las props para asignar el dueño
         api.post(`/equipos?usuarioId=${usuario.id}`, nuevoEquipo)
             .then(() => {
                 setMostrarModal(false);
@@ -33,23 +36,37 @@ const Home = ({ usuario, setUsuario }) => {
         navigate('/login');
     };
 
+    // LÓGICA DE FILTRADO
+    const misEquipos = equipos.filter(eq => eq.usuarioDueno?.id === usuario.id);
+    const otrosEquipos = equipos.filter(eq => eq.usuarioDueno?.id !== usuario.id);
+
     return (
         <div className="min-h-screen bg-slate-50 italic">
+            {/* NAVBAR */}
             <nav className="bg-slate-950 p-6 flex justify-between items-center px-10 shadow-2xl sticky top-0 z-50">
-                <h1 className="text-2xl font-black text-white tracking-tighter italic uppercase">TEAM <span className="text-emerald-500 font-normal">GEN</span></h1>
+                <h1 className="text-2xl font-black text-white tracking-tighter italic uppercase">
+                    TEAM <span className="text-emerald-500 font-normal">GEN</span>
+                </h1>
                 <div className="flex items-center gap-6">
                     <div className="text-right">
-                        <p className="text-[10px] text-emerald-500 font-black leading-none uppercase tracking-tighter">{usuario.rol}</p>
-                        <p className="text-white font-bold text-sm tracking-tight">{usuario.nombre}</p>
+                        <p className="text-[10px] text-emerald-500 font-black leading-none uppercase tracking-tighter">
+                            {usuario.rol}
+                        </p>
+                        <p className="text-white font-bold text-sm tracking-tight">
+                            {usuario.nombre}
+                        </p>
                     </div>
-                    <button onClick={logout} className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-xl hover:bg-red-500/20 text-red-400 transition-all font-bold">✕</button>
+                    <button onClick={logout} className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-xl hover:bg-red-500/20 text-red-400 transition-all font-bold">
+                        ✕
+                    </button>
                 </div>
             </nav>
 
             <main className="max-w-6xl mx-auto p-10">
+                {/* CABECERA */}
                 <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
                     <div>
-                        <h2 className="text-5xl font-black uppercase text-slate-900 tracking-tighter italic">Mis Equipos</h2>
+                        <h2 className="text-5xl font-black uppercase text-slate-900 tracking-tighter italic">Panel de Gestión</h2>
                         <div className="h-2 w-20 bg-emerald-500 rounded-full mt-2"></div>
                     </div>
                     <button onClick={() => setMostrarModal(true)} className="bg-emerald-600 text-white px-10 py-4 rounded-[1.5rem] font-black text-xs shadow-xl shadow-emerald-200 hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all uppercase tracking-widest">
@@ -57,26 +74,61 @@ const Home = ({ usuario, setUsuario }) => {
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {equipos.map(eq => (
-                        <div key={eq.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-2xl transition-all group">
-                             <div className="flex justify-between items-center mb-6">
-                                <div className="w-14 h-14 rounded-2xl shadow-lg border-2 border-slate-50" style={{backgroundColor: eq.colorPrincipal}}></div>
-                                <span className="text-[10px] font-black text-slate-300 font-mono tracking-widest">ID {eq.id}</span>
+                {/* SECCIÓN: MIS EQUIPOS */}
+                <div className="mb-16">
+                    <h3 className="text-xl font-black text-slate-400 uppercase mb-6 tracking-widest flex items-center gap-2">
+                        <span className="w-8 h-[2px] bg-emerald-500"></span> Mis Equipos
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {misEquipos.length > 0 ? misEquipos.map(eq => (
+                            <div key={eq.id} className="bg-white p-8 rounded-[2.5rem] border-2 border-emerald-500/20 shadow-sm hover:shadow-2xl transition-all group relative overflow-hidden">
+                                <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[8px] font-black px-4 py-1 rounded-bl-xl uppercase">Dueño</div>
+                                <div className="flex justify-between items-center mb-6">
+                                    <div className="w-14 h-14 rounded-2xl shadow-lg border-2 border-slate-50" style={{backgroundColor: eq.colorPrincipal}}></div>
+                                    <span className="text-[10px] font-black text-slate-300 font-mono tracking-widest">ID {eq.id}</span>
+                                </div>
+                                <h3 className="text-2xl font-black text-slate-800 mb-1 uppercase tracking-tighter">{eq.nombre}</h3>
+                                <p className="text-slate-400 text-[10px] font-black uppercase mb-8 italic">Manager: {eq.usuarioDueno?.username || 'SISTEMA'}</p>
+                                <Link to={`/equipo/${eq.id}`} className="block w-full bg-emerald-600 text-center py-4 rounded-2xl font-black text-white text-[10px] hover:bg-slate-900 transition-all uppercase tracking-widest shadow-lg shadow-emerald-100">
+                                    Administrar Plantilla
+                                </Link>
                             </div>
-                            <h3 className="text-2xl font-black text-slate-800 mb-1 uppercase tracking-tighter">{eq.nombre}</h3>
-                            <p className="text-slate-400 text-[10px] font-black uppercase mb-8 italic">Manager: {eq.usuarioDueno?.nombre || 'SISTEMA'}</p>
-                            <Link to={`/equipo/${eq.id}`} className="block w-full bg-slate-100 text-center py-4 rounded-2xl font-black text-slate-600 text-[10px] hover:bg-slate-900 hover:text-white transition-all uppercase tracking-widest">
-                                Abrir Gestión
-                            </Link>
-                        </div>
-                    ))}
+                        )) : (
+                            <div className="col-span-full p-10 border-2 border-dashed border-slate-200 rounded-[2.5rem] text-center">
+                                <p className="text-slate-400 font-bold">Aún no has creado ningún equipo.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* SECCIÓN: TODOS LOS EQUIPOS */}
+                <div>
+                    <h3 className="text-xl font-black text-slate-400 uppercase mb-6 tracking-widest flex items-center gap-2">
+                        <span className="w-8 h-[2px] bg-slate-300"></span> Explorar Liga
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {otrosEquipos.length > 0 ? otrosEquipos.map(eq => (
+                            <div key={eq.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-lg transition-all group opacity-80 hover:opacity-100">
+                                <div className="flex justify-between items-center mb-6">
+                                    <div className="w-14 h-14 rounded-2xl shadow-md border-2 border-slate-50" style={{backgroundColor: eq.colorPrincipal}}></div>
+                                    <span className="text-[10px] font-black text-slate-300 font-mono tracking-widest">ID {eq.id}</span>
+                                </div>
+                                <h3 className="text-2xl font-black text-slate-800 mb-1 uppercase tracking-tighter">{eq.nombre}</h3>
+                                <p className="text-slate-400 text-[10px] font-black uppercase mb-8 italic">Manager: {eq.usuarioDueno?.username || 'SISTEMA'}</p>
+                                <Link to={`/equipo/${eq.id}`} className="block w-full bg-slate-100 text-center py-4 rounded-2xl font-black text-slate-600 text-[10px] hover:bg-slate-900 hover:text-white transition-all uppercase tracking-widest">
+                                    Ver Detalles
+                                </Link>
+                            </div>
+                        )) : (
+                            <p className="text-slate-400 italic px-4 text-sm">No hay otros equipos registrados.</p>
+                        )}
+                    </div>
                 </div>
             </main>
 
-            {/* MODAL REDISEÑADO */}
+            {/* MODAL PARA CREAR EQUIPO */}
             {mostrarModal && (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-6 z-[100] animate-in fade-in duration-300">
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-6 z-[100]">
                     <div className="bg-white w-full max-w-md p-10 rounded-[3rem] shadow-2xl relative">
                         <h3 className="text-3xl font-black uppercase tracking-tighter text-center mb-8 italic">Nuevo <span className="text-emerald-600">Equipo</span></h3>
                         <form onSubmit={handleCrearEquipo} className="space-y-6">
@@ -93,7 +145,7 @@ const Home = ({ usuario, setUsuario }) => {
                             </div>
                             <div className="flex gap-4 pt-4">
                                 <button type="button" onClick={() => setMostrarModal(false)} className="flex-1 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Cancelar</button>
-                                <button className="flex-2 bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] shadow-lg shadow-emerald-200 uppercase tracking-widest">Crear Ahora</button>
+                                <button className="flex-2 bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] shadow-lg shadow-emerald-200 uppercase tracking-widest">Confirmar Registro</button>
                             </div>
                         </form>
                     </div>
