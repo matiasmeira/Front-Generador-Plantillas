@@ -1,39 +1,63 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
-const Home = ({ usuario, setUsuario }) => {
+// Componente Skeleton para equipos
+const EquipoSkeleton = () => (
+    <div className="bg-sports-card p-8 rounded-3xl border-2 border-sports-border shadow-sm animate-pulse">
+        <div className="flex justify-between items-center mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-sports-border"></div>
+            <div className="w-12 h-4 bg-sports-border rounded"></div>
+        </div>
+        <div className="h-6 bg-sports-border rounded mb-1"></div>
+        <div className="h-4 bg-sports-border rounded mb-8 w-3/4"></div>
+        <div className="w-full h-12 bg-sports-border rounded-2xl"></div>
+    </div>
+);
+
+const Home = () => {
     const [equipos, setEquipos] = useState([]);
     const [mostrarModal, setMostrarModal] = useState(false);
     const [nuevoEquipo, setNuevoEquipo] = useState({ nombre: '', colorPrincipal: '#10b981' });
-    const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+    const [creandoEquipo, setCreandoEquipo] = useState(false);
+    const { usuario, logout } = useAuth();
 
-    useEffect(() => { 
-        obtenerEquipos(); 
+    useEffect(() => {
+        obtenerEquipos();
     }, []);
 
-    const obtenerEquipos = () => {
-        api.get('/equipos')
-            .then(res => setEquipos(res.data))
-            .catch(err => console.error("Error al obtener equipos:", err));
+    const obtenerEquipos = async () => {
+        setLoading(true);
+        try {
+            const res = await api.get('/equipos');
+            setEquipos(res.data);
+        } catch (error) {
+            toast.error('Error al cargar equipos');
+            console.error("Error al obtener equipos:", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleCrearEquipo = (e) => {
+    const handleCrearEquipo = async (e) => {
         e.preventDefault();
-        // Usamos el ID del usuario de las props para asignar el dueño
-        api.post(`/equipos?usuarioId=${usuario.id}`, nuevoEquipo)
-            .then(() => {
-                setMostrarModal(false);
-                setNuevoEquipo({ nombre: '', colorPrincipal: '#10b981' });
-                obtenerEquipos();
-            })
-            .catch(() => alert("Error al crear equipo"));
-    };
+        setCreandoEquipo(true);
 
-    const logout = () => {
-        localStorage.removeItem('usuario');
-        setUsuario(null);
-        navigate('/login');
+        try {
+            await api.post(`/equipos?usuarioId=${usuario.id}`, nuevoEquipo);
+            setMostrarModal(false);
+            setNuevoEquipo({ nombre: '', colorPrincipal: '#10b981' });
+            await obtenerEquipos();
+            toast.success('Equipo creado exitosamente!');
+        } catch (error) {
+            toast.error(error.message || 'Error al crear equipo');
+        } finally {
+            setCreandoEquipo(false);
+        }
     };
 
     // LÓGICA DE FILTRADO
@@ -41,115 +65,233 @@ const Home = ({ usuario, setUsuario }) => {
     const otrosEquipos = equipos.filter(eq => eq.usuarioDueno?.id !== usuario.id);
 
     return (
-        <div className="min-h-screen bg-slate-50 italic">
+        <div className="min-h-screen bg-sports-dark italic font-sports">
             {/* NAVBAR */}
-            <nav className="bg-slate-950 p-6 flex justify-between items-center px-10 shadow-2xl sticky top-0 z-50">
-                <h1 className="text-2xl font-black text-white tracking-tighter italic uppercase">
-                    TEAM <span className="text-emerald-500 font-normal">GEN</span>
+            <motion.nav
+                className="bg-sports-darker p-6 flex justify-between items-center px-10 shadow-2xl sticky top-0 z-50"
+                initial={{ y: -100 }}
+                animate={{ y: 0 }}
+                transition={{ duration: 0.5 }}
+            >
+                <h1 className="text-2xl font-black text-sports-text tracking-tighter italic uppercase">
+                    TEAM <span className="text-sports-accent font-normal">GEN</span>
                 </h1>
                 <div className="flex items-center gap-6">
                     <div className="text-right">
-                        <p className="text-[10px] text-emerald-500 font-black leading-none uppercase tracking-tighter">
+                        <p className="text-xs text-sports-accent font-black leading-none uppercase tracking-tighter">
                             {usuario.rol}
                         </p>
-                        <p className="text-white font-bold text-sm tracking-tight">
+                        <p className="text-sports-text font-bold text-sm tracking-tight">
                             {usuario.nombre}
                         </p>
                     </div>
-                    <button onClick={logout} className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-xl hover:bg-red-500/20 text-red-400 transition-all font-bold">
+                    <motion.button
+                        onClick={logout}
+                        className="w-10 h-10 flex items-center justify-center bg-sports-card rounded-xl hover:bg-red-500/20 text-red-400 transition-all font-bold"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                    >
                         ✕
-                    </button>
+                    </motion.button>
                 </div>
-            </nav>
+            </motion.nav>
 
             <main className="max-w-6xl mx-auto p-10">
                 {/* CABECERA */}
-                <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+                <motion.div
+                    className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                >
                     <div>
-                        <h2 className="text-5xl font-black uppercase text-slate-900 tracking-tighter italic">Panel de Gestión</h2>
-                        <div className="h-2 w-20 bg-emerald-500 rounded-full mt-2"></div>
+                        <h2 className="text-5xl font-black uppercase text-sports-text tracking-tighter italic">Panel de Gestión</h2>
+                        <div className="h-2 w-20 bg-sports-accent rounded-full mt-2"></div>
                     </div>
-                    <button onClick={() => setMostrarModal(true)} className="bg-emerald-600 text-white px-10 py-4 rounded-[1.5rem] font-black text-xs shadow-xl shadow-emerald-200 hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all uppercase tracking-widest">
+                    <motion.button
+                        onClick={() => setMostrarModal(true)}
+                        className="btn-primary text-xs uppercase tracking-widest"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
                         + Registrar Nuevo Team
-                    </button>
-                </div>
+                    </motion.button>
+                </motion.div>
 
                 {/* SECCIÓN: MIS EQUIPOS */}
-                <div className="mb-16">
-                    <h3 className="text-xl font-black text-slate-400 uppercase mb-6 tracking-widest flex items-center gap-2">
-                        <span className="w-8 h-[2px] bg-emerald-500"></span> Mis Equipos
+                <motion.div
+                    className="mb-16"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                >
+                    <h3 className="text-xl font-black text-sports-text-secondary uppercase mb-6 tracking-widest flex items-center gap-2">
+                        <span className="w-8 h-[2px] bg-sports-accent"></span> Mis Equipos
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {misEquipos.length > 0 ? misEquipos.map(eq => (
-                            <div key={eq.id} className="bg-white p-8 rounded-[2.5rem] border-2 border-emerald-500/20 shadow-sm hover:shadow-2xl transition-all group relative overflow-hidden">
-                                <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[8px] font-black px-4 py-1 rounded-bl-xl uppercase">Dueño</div>
+                        {loading ? (
+                            Array.from({ length: 3 }).map((_, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: i * 0.1 }}
+                                >
+                                    <EquipoSkeleton />
+                                </motion.div>
+                            ))
+                        ) : misEquipos.length > 0 ? misEquipos.map((eq, index) => (
+                            <motion.div
+                                key={eq.id}
+                                className="card p-8 rounded-3xl border-2 border-sports-accent/20 shadow-sm hover:shadow-2xl transition-all group relative overflow-hidden cursor-pointer"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                whileHover={{ y: -5 }}
+                            >
+                                <div className="absolute top-0 right-0 bg-sports-accent text-sports-dark text-xs font-black px-4 py-1 rounded-bl-xl uppercase">Dueño</div>
                                 <div className="flex justify-between items-center mb-6">
-                                    <div className="w-14 h-14 rounded-2xl shadow-lg border-2 border-slate-50" style={{backgroundColor: eq.colorPrincipal}}></div>
-                                    <span className="text-[10px] font-black text-slate-300 font-mono tracking-widest">ID {eq.id}</span>
+                                    <div className="w-14 h-14 rounded-2xl shadow-lg border-2 border-sports-border" style={{backgroundColor: eq.colorPrincipal}}></div>
+                                    <span className="text-xs font-black text-sports-text-secondary font-mono tracking-widest">ID {eq.id}</span>
                                 </div>
-                                <h3 className="text-2xl font-black text-slate-800 mb-1 uppercase tracking-tighter">{eq.nombre}</h3>
-                                <p className="text-slate-400 text-[10px] font-black uppercase mb-8 italic">Manager: {eq.usuarioDueno?.username || 'SISTEMA'}</p>
-                                <Link to={`/equipo/${eq.id}`} className="block w-full bg-emerald-600 text-center py-4 rounded-2xl font-black text-white text-[10px] hover:bg-slate-900 transition-all uppercase tracking-widest shadow-lg shadow-emerald-100">
+                                <h3 className="text-2xl font-black text-sports-text mb-1 uppercase tracking-tighter">{eq.nombre}</h3>
+                                <p className="text-sports-text-secondary text-xs font-black uppercase mb-8 italic">Manager: {eq.usuarioDueno?.username || 'SISTEMA'}</p>
+                                <Link to={`/equipo/${eq.id}`} className="block w-full btn-primary text-xs hover:bg-sports-accent-dark transition-all uppercase tracking-widest shadow-lg shadow-sports-accent/20">
                                     Administrar Plantilla
                                 </Link>
-                            </div>
+                            </motion.div>
                         )) : (
-                            <div className="col-span-full p-10 border-2 border-dashed border-slate-200 rounded-[2.5rem] text-center">
-                                <p className="text-slate-400 font-bold">Aún no has creado ningún equipo.</p>
-                            </div>
+                            <motion.div
+                                className="col-span-full p-10 border-2 border-dashed border-sports-border rounded-3xl text-center"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                            >
+                                <p className="text-sports-text-secondary font-bold">Aún no has creado ningún equipo.</p>
+                            </motion.div>
                         )}
                     </div>
-                </div>
+                </motion.div>
 
                 {/* SECCIÓN: TODOS LOS EQUIPOS */}
-                <div>
-                    <h3 className="text-xl font-black text-slate-400 uppercase mb-6 tracking-widest flex items-center gap-2">
-                        <span className="w-8 h-[2px] bg-slate-300"></span> Explorar Liga
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                >
+                    <h3 className="text-xl font-black text-sports-text-secondary uppercase mb-6 tracking-widest flex items-center gap-2">
+                        <span className="w-8 h-[2px] bg-sports-border"></span> Explorar Liga
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {otrosEquipos.length > 0 ? otrosEquipos.map(eq => (
-                            <div key={eq.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-lg transition-all group opacity-80 hover:opacity-100">
+                        {loading ? (
+                            Array.from({ length: 3 }).map((_, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: i * 0.1 + 0.3 }}
+                                >
+                                    <EquipoSkeleton />
+                                </motion.div>
+                            ))
+                        ) : otrosEquipos.length > 0 ? otrosEquipos.map((eq, index) => (
+                            <motion.div
+                                key={eq.id}
+                                className="card p-8 rounded-3xl border border-sports-border shadow-sm hover:shadow-lg transition-all group opacity-80 hover:opacity-100 cursor-pointer"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 + 0.3 }}
+                                whileHover={{ y: -5 }}
+                            >
                                 <div className="flex justify-between items-center mb-6">
-                                    <div className="w-14 h-14 rounded-2xl shadow-md border-2 border-slate-50" style={{backgroundColor: eq.colorPrincipal}}></div>
-                                    <span className="text-[10px] font-black text-slate-300 font-mono tracking-widest">ID {eq.id}</span>
+                                    <div className="w-14 h-14 rounded-2xl shadow-md border-2 border-sports-border" style={{backgroundColor: eq.colorPrincipal}}></div>
+                                    <span className="text-xs font-black text-sports-text-secondary font-mono tracking-widest">ID {eq.id}</span>
                                 </div>
-                                <h3 className="text-2xl font-black text-slate-800 mb-1 uppercase tracking-tighter">{eq.nombre}</h3>
-                                <p className="text-slate-400 text-[10px] font-black uppercase mb-8 italic">Manager: {eq.usuarioDueno?.username || 'SISTEMA'}</p>
-                                <Link to={`/equipo/${eq.id}`} className="block w-full bg-slate-100 text-center py-4 rounded-2xl font-black text-slate-600 text-[10px] hover:bg-slate-900 hover:text-white transition-all uppercase tracking-widest">
+                                <h3 className="text-2xl font-black text-sports-text mb-1 uppercase tracking-tighter">{eq.nombre}</h3>
+                                <p className="text-sports-text-secondary text-xs font-black uppercase mb-8 italic">Manager: {eq.usuarioDueno?.username || 'SISTEMA'}</p>
+                                <Link to={`/equipo/${eq.id}`} className="block w-full btn-secondary text-xs hover:bg-sports-border hover:text-sports-text transition-all uppercase tracking-widest">
                                     Ver Detalles
                                 </Link>
-                            </div>
+                            </motion.div>
                         )) : (
-                            <p className="text-slate-400 italic px-4 text-sm">No hay otros equipos registrados.</p>
+                            <p className="text-sports-text-secondary italic px-4 text-sm">No hay otros equipos registrados.</p>
                         )}
                     </div>
-                </div>
+                </motion.div>
             </main>
 
             {/* MODAL PARA CREAR EQUIPO */}
             {mostrarModal && (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-6 z-[100]">
-                    <div className="bg-white w-full max-w-md p-10 rounded-[3rem] shadow-2xl relative">
-                        <h3 className="text-3xl font-black uppercase tracking-tighter text-center mb-8 italic">Nuevo <span className="text-emerald-600">Equipo</span></h3>
+                <motion.div
+                    className="fixed inset-0 bg-sports-dark/80 backdrop-blur-md flex items-center justify-center p-6 z-[100]"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                >
+                    <motion.div
+                        className="bg-sports-card w-full max-w-md p-10 rounded-3xl shadow-2xl relative"
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: "spring", damping: 25 }}
+                    >
+                        <h3 className="text-3xl font-black uppercase tracking-tighter text-center mb-8 italic">
+                            Nuevo <span className="text-sports-accent">Equipo</span>
+                        </h3>
                         <form onSubmit={handleCrearEquipo} className="space-y-6">
                             <div>
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Nombre Oficial</label>
-                                <input className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-500 transition-all font-bold" value={nuevoEquipo.nombre} onChange={e => setNuevoEquipo({...nuevoEquipo, nombre: e.target.value})} required placeholder="Ej. Real Madrid FC" />
+                                <label className="text-xs font-black text-sports-text-secondary uppercase tracking-widest ml-2 mb-1 block">Nombre Oficial</label>
+                                <input
+                                    className="input-field"
+                                    value={nuevoEquipo.nombre}
+                                    onChange={e => setNuevoEquipo({...nuevoEquipo, nombre: e.target.value})}
+                                    required
+                                    placeholder="Ej. Real Madrid FC"
+                                    disabled={creandoEquipo}
+                                />
                             </div>
                             <div>
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Color de Identidad</label>
+                                <label className="text-xs font-black text-sports-text-secondary uppercase tracking-widest ml-2 mb-1 block">Color de Identidad</label>
                                 <div className="flex gap-4 items-center">
-                                    <input type="color" className="h-16 w-24 p-1 bg-white border-2 border-slate-100 rounded-2xl cursor-pointer" value={nuevoEquipo.colorPrincipal} onChange={e => setNuevoEquipo({...nuevoEquipo, colorPrincipal: e.target.value})} />
-                                    <span className="font-mono font-black text-slate-400 text-sm tracking-tighter">{nuevoEquipo.colorPrincipal.toUpperCase()}</span>
+                                    <input
+                                        type="color"
+                                        className="h-16 w-24 p-1 bg-sports-dark border-2 border-sports-border rounded-2xl cursor-pointer"
+                                        value={nuevoEquipo.colorPrincipal}
+                                        onChange={e => setNuevoEquipo({...nuevoEquipo, colorPrincipal: e.target.value})}
+                                        disabled={creandoEquipo}
+                                    />
+                                    <span className="font-mono font-black text-sports-text-secondary text-sm tracking-tighter">
+                                        {nuevoEquipo.colorPrincipal.toUpperCase()}
+                                    </span>
                                 </div>
                             </div>
                             <div className="flex gap-4 pt-4">
-                                <button type="button" onClick={() => setMostrarModal(false)} className="flex-1 py-4 font-black text-[10px] text-slate-400 uppercase tracking-widest">Cancelar</button>
-                                <button className="flex-2 bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] shadow-lg shadow-emerald-200 uppercase tracking-widest">Confirmar Registro</button>
+                                <button
+                                    type="button"
+                                    onClick={() => setMostrarModal(false)}
+                                    className="flex-1 py-4 font-black text-xs text-sports-text-secondary uppercase tracking-widest hover:text-sports-text transition-colors"
+                                    disabled={creandoEquipo}
+                                >
+                                    Cancelar
+                                </button>
+                                <motion.button
+                                    type="submit"
+                                    className="flex-2 btn-primary text-xs tracking-widest uppercase"
+                                    disabled={creandoEquipo}
+                                    whileHover={{ scale: creandoEquipo ? 1 : 1.02 }}
+                                    whileTap={{ scale: creandoEquipo ? 1 : 0.98 }}
+                                >
+                                    {creandoEquipo ? (
+                                        <div className="flex items-center justify-center gap-2">
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            Creando...
+                                        </div>
+                                    ) : (
+                                        'Confirmar Registro'
+                                    )}
+                                </motion.button>
                             </div>
                         </form>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
             )}
         </div>
     );

@@ -1,1 +1,83 @@
 @import "tailwindcss";
+
+@theme {
+  --color-sports-dark: #0f172a;
+  --color-sports-darker: #020617;
+  --color-sports-accent: #10b981;
+  --color-sports-accent-light: #34d399;
+  --color-sports-accent-dark: #059669;
+  --color-sports-text: #f1f5f9;
+  --color-sports-text-secondary: #94a3b8;
+  --color-sports-card: #1e293b;
+  --color-sports-border: #334155;
+
+  --font-family-sports: 'Inter', system-ui, sans-serif;
+
+  --animate-fade-in: fadeIn 0.5s ease-in-out;
+  --animate-slide-up: slideUp 0.3s ease-out;
+  --animate-bounce-subtle: bounceSubtle 1s infinite;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes slideUp {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes bounceSubtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@layer base {
+  html {
+    font-family: var(--font-family-sports);
+  }
+
+  body {
+    @apply bg-sports-dark text-sports-text;
+    background-image:
+      radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+  }
+
+  /* Scrollbar personalizado */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-sports-darker;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-sports-accent rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-sports-accent-light;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-sports-accent hover:bg-sports-accent-dark text-white font-black uppercase tracking-widest px-6 py-3 rounded-2xl shadow-lg shadow-sports-accent/20 transition-all transform active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply bg-sports-card hover:bg-sports-border text-sports-text font-bold uppercase tracking-wide px-6 py-3 rounded-2xl border border-sports-border transition-all;
+  }
+
+  .card {
+    @apply bg-sports-card border border-sports-border rounded-3xl shadow-xl;
+  }
+
+  .input-field {
+    @apply bg-sports-darker border-2 border-sports-border rounded-2xl px-4 py-3 text-sports-text placeholder-sports-text-secondary focus:border-sports-accent focus:outline-none transition-all;
+  }
+}
