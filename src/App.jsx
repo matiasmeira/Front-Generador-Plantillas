@@ -9,15 +9,22 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Intentamos recuperar la sesión del localStorage al cargar la app
+    // Intentamos recuperar la sesión y el token del localStorage
     const userStored = localStorage.getItem('usuario');
-    if (userStored) {
+    const tokenStored = localStorage.getItem('token');
+
+    if (userStored && tokenStored) {
       try {
         setUsuario(JSON.parse(userStored));
       } catch (error) {
         console.error("Error al parsear el usuario del localStorage", error);
         localStorage.removeItem('usuario');
+        localStorage.removeItem('token');
       }
+    } else {
+      // Limpiamos todo en caso de inconsistencia (ej. usuario sin token)
+      localStorage.removeItem('usuario');
+      localStorage.removeItem('token');
     }
     setLoading(false);
   }, []);

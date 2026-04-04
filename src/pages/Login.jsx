@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 const Login = ({ setUsuario }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState(false); // Estado para manejar visualmente el error
+    const [error, setError] = useState(false);
+    const navigate = useNavigate();
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -12,8 +14,16 @@ const Login = ({ setUsuario }) => {
         
         api.post('/usuarios/login', { username, password })
             .then(res => {
-                localStorage.setItem('usuario', JSON.stringify(res.data));
-                setUsuario(res.data);
+                // El backend ahora devuelve un AuthResponse con { token: "...", usuario: {...} }
+                const { token, usuario } = res.data;
+
+                // Guardamos el token y los datos del usuario
+                localStorage.setItem('token', token);
+                localStorage.setItem('usuario', JSON.stringify(usuario));
+                
+                // Actualizamos el estado global y redirigimos
+                setUsuario(usuario);
+                navigate('/home');
             })
             .catch(() => {
                 setError(true);
